@@ -1,0 +1,137 @@
+{
+    "definitions": {},
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "http://example.com/root.json",
+    "type": "object",
+    "title": "The Root Schema",
+    "required": [
+        "Dependency",
+        "Method",
+        "Auth",
+        "Headers",
+        "Body",
+        "URL"
+    ],
+    "properties": {
+        "Dependency": {
+            "$id": "#/properties/Dependency",
+            "type": [
+                "string",
+                "null"
+            ],
+            "title": "The Dependency Schema",
+            "default": "",
+            "examples": [
+                "https://mySuperCoolURL.com/"
+            ],
+            "pattern": "^(.*)$"
+        },
+        "Method": {
+            "$id": "#/properties/Method",
+            "type": "string",
+            "title": "The Method Schema",
+            "default": "",
+            "examples": [
+                "GET"
+            ],
+            "pattern": "(GET|POST|PUT)"
+        },
+        "Auth": {
+            "$id": "#/properties/Auth",
+            "type": "object",
+            "properties": {
+                "Type": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "Username": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "Password": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "Type",
+                "Username",
+                "Password"
+            ],
+            "title": "The Auth Schema"
+        },
+        "Headers": {
+            "$id": "#/properties/Headers",
+            "type": [
+                "array",
+                "null"
+            ],
+            "title": "The Headers Schema",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "Key": {
+                        "type": "string"
+                    },
+                    "Value": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "Key",
+                    "Value"
+                ]
+            },
+            "minItems": 0,
+            "maxItems": 20,
+            "uniqueItems": true
+        },
+        "Body": {
+            "$id": "#/properties/Body",
+            "type": [
+                "string",
+                "array",
+                "null"
+            ],
+            "title": "The Body Schema",
+            "examples": [
+                "Source content"
+            ],
+            "pattern": "^(.*)$",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "Key": {
+                        "type": "string"
+                    },
+                    "Value": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "Key",
+                    "Value"
+                ]
+            },
+            "minItems": 0,
+            "maxItems": 20,
+            "uniqueItems": true
+        },
+        "URL": {
+            "$id": "#/properties/URL",
+            "type": "string",
+            "title": "The URL Schema",
+            "default": "",
+            "examples": [
+                "https://mySuperCoolURL.com/"
+            ],
+            "pattern": "^(.*)$"
+        }
+    }
+}

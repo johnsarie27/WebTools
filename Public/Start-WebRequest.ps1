@@ -1,0 +1,98 @@
+#Requires -Version 6.0 -Modules AWS.Tools.SimpleSystemsManagement
+
+function Start-WebRequest {
+    <# =========================================================================
+    .SYNOPSIS
+        Initiate web request using provided parameters
+    .DESCRIPTION
+        Validate input as Json with correct schema and intitiate pull-push process.
+        There is not error catching in the Invoke-WebRequest as this should be done
+        outside of this specific function.
+    .PARAMETER Payload
+        Json payload containing required information for web request
+    .PARAMETER Body
+        Body of web request if not specified in the Payload
+    .INPUTS
+        System.String.
+    .OUTPUTS
+        Microsoft.PowerShell.Commands.BasicHtmlWebResponseObject.
+    .EXAMPLE
+        PS C:\> <example usage>
+        Explanation of what the example does
+    .NOTES
+        General notes
+        This function assumes the system running has credentials to pull SSM
+        Parameters from Parameter Store.
+    ========================================================================= #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory, ValueFromPipeline, HelpMessage = 'Json payload for pull-push process')]
+        [ValidateScript({ Test-Json -Json $_ -Schema $EtlSchema })]
+        [string] $Payload,
+
+        [Parameter(HelpMessage = 'Body')]
+        [System.Object] $Body
+    )
+
+    Process {
+        $data = $Payload | ConvertFrom-Json
+
+        $params = @{ Uri = $data.URL }
+
+        if ( $data.Auth.Password ) { # REMOVE THE @CREDS BELOW
+            $securePW = (Get-SSMParameter -Name $data.Auth.Password -WithDecryption $true @creds).Value | ConvertTo-SecureString -AsPlainText -Force
+            if ( !$data.Auth.Username ) { $data.Auth.Username = 'none' }
+            $creds = [System.Management.Automation.PSCredential]::new($data.Auth.Username, $securePw)
+
+            # DETERMINE AUTHENTICATION
+            switch ($data.Auth.Type) {
+                'Token' {
+                    try { $token = Get-PortalToken -Credential $creds -URL $data.Dependency }
+                    catch { Write-Host -Object ('Failed to generate token with exception: {0}' -f $_.Exception.Message) }
+                    finally { $params['Uri'] = $data.URL -f $token.token }
+                }
+                'ApiKey' {
+                    $params['Uri'] = $data.URL -f $creds.GetNetworkCredential().Password
+                }
+                'Basic' {
+                    $params.Add('Authentication', 'Basic')
+                    $params.Add('Credential', $creds)
+                }
+                default {
+                    $params.Add('Credential', $creds)
+                }
+            }
+        }
+        if ( $data.Method ) {
+            $params.Add('Method', $data.Method)
+        }
+        if ( $data.Headers ) {
+            $headers = @{ }
+            $data.Headers | Foreach-Object -Process { $headers.Add($_.Key, $_.Value) }
+            $params.Add('Headers', $headers)
+        }
+        if ( $data.Body ) {
+            if ( $data.Body -eq 'Source content' ) {
+                if ( $headers.ContainsKey('Content-Type') -and $headers['Content-Type'] -eq 'application/json' ) {
+                    Write-Host -Object 'Attempting to validate Json'
+                    try {
+                        if ( Test-Json -Json $Body -ErrorAction SilentlyContinue ) { $params.Add('Body', $Body) }
+                    }
+                    catch {
+                        $params.Add('Body', ('{"data":{0}}' -f $Body))
+                    }
+                }
+                else {
+                    $params.Add('Body', $Body)
+                }
+            }
+            else {
+                $params.Add('Body', (ConvertTo-Json -InputObject $data.Body -Compress))
+            }
+        }
+
+        if ( ([System.Uri] $params['Uri']).Scheme -ne 'https' ) { Write-Host -Object 'URL is not using Secure Protocol (HTTPS)' }
+
+        Invoke-WebRequest @params
+    }
+}
