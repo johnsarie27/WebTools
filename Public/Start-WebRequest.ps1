@@ -91,7 +91,11 @@ function Start-WebRequest {
             }
         }
 
-        if ( ([System.Uri] $params['Uri']).Scheme -ne 'https' ) { Write-Host -Object 'URL is not using Secure Protocol (HTTPS)' }
+        # IF DIGEST AUTHENTICATION IS USED AND THE URL SCHEME IS NOT HTTPS AN ERROR MESSAGE WILL BE
+        # GENERATED PRODUCING A 401 UNAUTHORIZED. BE SURE TO USE HTTPS WHEN PASSING AUTHENTICATION
+        if ( ([System.Uri] $params['Uri']).Scheme -ne 'https' ) {
+            Write-Host -Object 'URL is not using Secure Protocol (HTTPS)'
+        }
 
         Invoke-WebRequest @params
     }
