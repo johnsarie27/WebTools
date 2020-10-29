@@ -21,8 +21,8 @@ function Start-WebRequest {
         Explanation of what the example does
     .NOTES
         General notes
-        This function assumes the system running has credentials to pull SSM
-        Parameters from Parameter Store.
+        This function requires the system running it has credentials to pull and
+        decrypt SSM Parameters from Parameter Store.
     ========================================================================= #>
     [CmdletBinding()]
     Param(
@@ -39,8 +39,8 @@ function Start-WebRequest {
 
         $params = @{ Uri = $data.URL }
 
-        if ( $data.Auth.Password ) { # REMOVE THE @CREDS BELOW
-            $securePW = (Get-SSMParameter -Name $data.Auth.Password -WithDecryption $true @creds).Value | ConvertTo-SecureString -AsPlainText -Force
+        if ( $data.Auth.Password ) { # MAKE SURE TO REMOVE @CREDS !!!
+            $securePW = (Get-SSMParameter -Name $data.Auth.Password -WithDecryption $true).Value | ConvertTo-SecureString -AsPlainText -Force
             if ( !$data.Auth.Username ) { $data.Auth.Username = 'none' }
             $creds = [System.Management.Automation.PSCredential]::new($data.Auth.Username, $securePw)
 
@@ -79,7 +79,7 @@ function Start-WebRequest {
                         if ( Test-Json -Json $Body -ErrorAction SilentlyContinue ) { $params.Add('Body', $Body) }
                     }
                     catch {
-                        $params.Add('Body', ('{"data":{0}}' -f $Body))
+                        $params.Add('Body', ('{"data":' + $Body + '}'))
                     }
                 }
                 else {
