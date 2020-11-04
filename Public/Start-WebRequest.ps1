@@ -1,5 +1,3 @@
-#Requires -Version 6.0 -Modules AWS.Tools.SimpleSystemsManagement
-
 function Start-WebRequest {
     <# =========================================================================
     .SYNOPSIS

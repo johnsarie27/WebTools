@@ -1,5 +1,3 @@
-#Requires -Version 4.0
-
 function Get-PortalToken {
     <# =========================================================================
     .SYNOPSIS
