@@ -45,9 +45,8 @@ function Start-WebRequest {
             # DETERMINE AUTHENTICATION
             switch ($data.Auth.Type) {
                 'Token' {
-                    try { $token = Get-PortalToken -Credential $creds -URL $data.Dependency }
-                    catch { Write-Host -Object ('Failed to generate token with exception: {0}' -f $_.Exception.Message) }
-                    finally { $params['Uri'] = $data.URL -f $token.token }
+                    $token = Get-PortalToken -Credential $creds -URL $data.Dependency
+                    $params['Uri'] = $data.URL -f $token.token
                 }
                 'ApiKey' {
                     $params['Uri'] = $data.URL -f $creds.GetNetworkCredential().Password

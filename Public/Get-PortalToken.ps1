@@ -69,7 +69,7 @@ function Get-PortalToken {
                 $msg = "Request failed with unknown error"
             }
             # WRITE OUT ERROR
-            Write-Error -Message $msg
+            Throw $msg
         }
         else {
             $response
