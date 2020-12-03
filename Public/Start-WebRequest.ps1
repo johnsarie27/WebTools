@@ -85,6 +85,9 @@ function Start-WebRequest {
                     $params.Add('Body', $Body)
                 }
             }
+            elseif ( $data.Body.GetType().FullName -eq 'System.String' ) {
+                $params.Add('Body', $data.Body)
+            }
             else {
                 $params.Add('Body', (ConvertTo-Json -InputObject $data.Body -Compress))
             }
