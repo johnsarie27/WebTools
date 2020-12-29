@@ -8,6 +8,8 @@ function Get-PortalToken {
         Target ArcGIS Portal URL
     .PARAMETER Credential
         PowerShell credential object containing username and password
+    .PARAMETER Expiration
+        Token expiration time in minutes
     .INPUTS
         None.
     .OUTPUTS
@@ -32,7 +34,11 @@ function Get-PortalToken {
 
         [Parameter(Mandatory, HelpMessage = 'PS Credential object containing un and pw')]
         [ValidateNotNullOrEmpty()]
-        [pscredential] $Credential
+        [pscredential] $Credential,
+
+        [Parameter(HelpMessage = 'Token expiration time in minutes')]
+        [ValidateRange(1,900)]
+        [int] $Expiration = 60
     )
 
     Process {
@@ -45,10 +51,9 @@ function Get-PortalToken {
                 password   = $Credential.GetNetworkCredential().password
                 referer    = '{0}://{1}' -f $URL.Scheme, $URL.Authority
                 client     = 'referer'
-                expiration = 60 #minutes
+                expiration = $Expiration #minutes
                 f          = 'pjson'
             }
-            #UserAgent      = "Mozilla/5.0 (Windows NT 10.0; …) Gecko/20100101 Firefox/67.0"
         }
 
         # GENERATE TOKEN
