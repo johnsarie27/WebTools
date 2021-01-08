@@ -48,8 +48,8 @@ function Get-PortalToken {
             Body   = @{
                 username   = $Credential.UserName
                 password   = $Credential.GetNetworkCredential().password
-                referer    = '{0}://{1}' -f $URL.Scheme, $URL.Authority
-                client     = 'referer'
+                client     = 'requestip' #'referer'
+                #referer    = '{0}://{1}' -f $URL.Scheme, $URL.Authority
                 expiration = $Expiration #minutes
                 f          = 'pjson'
             }
