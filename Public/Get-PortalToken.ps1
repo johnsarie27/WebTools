@@ -43,8 +43,7 @@ function Get-PortalToken {
 
     Process {
         $restParams = @{
-            Uri    = $URL.AbsoluteUri
-            #Uri    = 'https://myDomain.com/arcgis/sharing/rest/generateToken'
+            Uri    = $URL.AbsoluteUri #'https://myDomain.com/arcgis/sharing/rest/generateToken'
             Method = "POST"
             Body   = @{
                 username   = $Credential.UserName
