@@ -56,6 +56,7 @@ function Start-WebRequest {
                     $params.Add('Credential', $creds)
                 }
                 default {
+                    # THIS WORKS FOR DIGEST AUTH
                     $params.Add('Credential', $creds)
                 }
             }
