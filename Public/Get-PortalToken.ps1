@@ -29,7 +29,7 @@ function Get-PortalToken {
     Param(
         [Parameter(Mandatory, HelpMessage = 'Target Portal URL')]
         [ValidateNotNullOrEmpty()]
-        [ValidateScript({ $_.AbsoluteUri -match 'https://[\w\/\.-]+rest\/generateToken' })]
+        [ValidateScript({ $_.AbsoluteUri -match 'https://[\w\/\.-]+[rest|admin]\/generateToken' })]
         [System.Uri] $URL,
 
         [Parameter(Mandatory, HelpMessage = 'PS Credential object containing un and pw')]
@@ -55,9 +55,8 @@ function Get-PortalToken {
             }
         }
 
-        # GENERATE TOKEN
-        $response = Invoke-RestMethod @restParams
-        #$response = Invoke-WebRequest @restParams -UseBasicParsing
+        try { $response = Invoke-RestMethod @restParams }
+        catch { $response = $_.Exception.Response }
 
         # CHECK FOR ERRORS AND RETURN
         if ( -not $response.token ) {
@@ -69,16 +68,13 @@ function Get-PortalToken {
                 $tokens = @($response.error.code, $response.error.message, $details)
                 $msg = "Request failed with response:`n`tcode: {0}`n`tmessage: {1}`n`tdetails: {2}" -f $tokens
             }
-            else {
-                $msg = "Request failed with unknown error"
-            }
-            # WRITE OUT ERROR
+            elseif ( $response.ReasonPhrase ) { $msg = $response.ReasonPhrase }
+            else { $msg = "Request failed with unknown error" }
+
             Throw $msg
         }
         else {
             $response
         }
-
-        #$expiration = (Get-Date -Date "1/1/1970").AddSeconds($Response.expires).ToLocalTime()
     }
 }
