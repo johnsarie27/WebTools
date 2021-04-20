@@ -82,11 +82,11 @@ function Update-ServerPSA {
                     Write-SECSecretValue -SecretId $SecretId -SecretString ($secret | ConvertTo-Json -Compress) @cmdCreds
                 }
                 else {
-                    Throw ('Error updating user password for app [{0}]' -f ($server['user'] -f $BaseUri, $secret.username))
+                    Throw ('Error updating user password for app [{0}]' -f ($server['user'] -f $BaseUri))
                 }
             }
             else {
-                Throw ('Error retrieving user for app [{0}]' -f ($server['user'] -f $BaseUri, $secret.username))
+                Throw ('Error retrieving user for app [{0}]' -f ($server['user'] -f $BaseUri))
             }
         }
         catch {

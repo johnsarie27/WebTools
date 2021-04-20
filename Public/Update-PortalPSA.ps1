@@ -81,11 +81,11 @@ function Update-PortalPSA {
                     Write-SECSecretValue -SecretId $SecretId -SecretString ($secret | ConvertTo-Json -Compress) @cmdCreds
                 }
                 else {
-                    Throw ('Error updating user password for app [{0}]' -f ($portal['user'] -f $BaseUri, $secret.username))
+                    Throw ('Error updating user password for app [{0}]' -f ($portal['user'] -f $BaseUri))
                 }
             }
             else {
-                Throw ('Error retrieving user for app [{0}]' -f ($portal['user'] -f $BaseUri, $secret.username))
+                Throw ('Error retrieving user for app [{0}]' -f ($portal['user'] -f $BaseUri))
             }
         }
         catch {
