@@ -48,8 +48,9 @@ function Get-PortalToken {
             Body   = @{
                 username   = $Credential.UserName
                 password   = $Credential.GetNetworkCredential().password
-                client     = 'requestip' #'referer'
-                #referer    = '{0}://{1}' -f $URL.Scheme, $URL.Authority
+                #client     = 'requestip' #'referer'
+                #referer    = 'http' # THIS IS REQUIRED FOR PYTHON API
+                referer    = '{0}://{1}' -f $URL.Scheme, $URL.Authority
                 expiration = $Expiration #minutes
                 f          = 'pjson'
             }
