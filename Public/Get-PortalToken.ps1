@@ -15,17 +15,12 @@ function Get-PortalToken {
     .INPUTS
         None.
     .OUTPUTS
-        System.String.
+        System.Object.
     .EXAMPLE
-        PS C:\> Get-PortalToken -Domain mydomain.com -Credential $creds
+        PS C:\> Get-PortalToken -URL https://mydomain.com/arcgis -Credential $creds
         Generate token for mydomain.com
     .NOTES
-        This works just fine inside the boundary but doesn't work outside.
-        Need to review WAF deny logs to determine why.
-
-        -- SERVER ENDPONITS --
-        https://myDomain.com/arcgis/admin/login
-        https://myDomain.com/arcgis/admin/generateToken
+        General notes
     ========================================================================= #>
     [CmdletBinding()]
     Param(

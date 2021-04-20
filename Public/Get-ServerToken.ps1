@@ -13,9 +13,9 @@ function Get-ServerToken {
     .INPUTS
         None.
     .OUTPUTS
-        System.String.
+        System.Object.
     .EXAMPLE
-        PS C:\> Get-ServerToken -URL mydomain.com -Credential $creds
+        PS C:\> Get-ServerToken -URL https://mydomain.com/arcgis -Credential $creds
         Generate token for mydomain.com
     .NOTES
         -- SERVER ENDPONITS --
