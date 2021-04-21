@@ -72,7 +72,6 @@ function Update-PortalPSA {
                     Method = 'POST'
                     Body   = @{ f = 'pjson'; token = $token.token; password = $newPW }
                 }
-                if ( $app -eq $uri['server'] ) { $restParams['Body'].Add('username', $secret.username) }
                 $rotate = Invoke-RestMethod @restParams
 
                 if ( $rotate.success -eq $true ) {
