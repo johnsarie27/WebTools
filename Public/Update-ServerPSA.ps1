@@ -32,16 +32,14 @@ function Update-ServerPSA {
         [ValidatePattern('^https://[\w\.\-]+(/[\w]+)?$')]
         [System.Uri] $BaseUri,
 
-        [Parameter(Mandatory, HelpMessage = 'AWS Credential object for AWS account')]
+        [Parameter(Mandatory, ParameterSetName = '__crd', HelpMessage = 'AWS Credential object for AWS account')]
         [Amazon.SecurityToken.Model.Credentials] $Credential,
 
-        [Parameter(Mandatory, HelpMessage = 'AWS Region')]
-        [ValidateScript( { $_ -in (Get-AWSRegion).Region })]
+        [Parameter(Mandatory, ParameterSetName = '__crd', HelpMessage = 'AWS Region')]
+        [ValidateScript({ $_ -in (Get-AWSRegion).Region })]
         [string] $Region
     )
     Begin {
-        $cmdCreds = @{ Credential = $Credential; Region = $Region }
-
         $server = @{
             token  = '{0}/admin/generateToken'
             user   = '{0}/admin/security/psa'
@@ -50,7 +48,13 @@ function Update-ServerPSA {
     }
     Process {
         try {
-            $secret = (Get-SECSecretValue -SecretId $SecretId @cmdCreds).SecretString | ConvertFrom-Json
+            if ($PSCmdlet.ParameterSetName -eq '__crd') {
+                $cmdCreds = @{ Credential = $Credential; Region = $Region }
+                $secret = (Get-SECSecretValue -SecretId $SecretId @cmdCreds).SecretString | ConvertFrom-Json
+            }
+            else {
+                $secret = (Get-SECSecretValue -SecretId $SecretId).SecretString | ConvertFrom-Json
+            }
             $secureString = $secret.password | ConvertTo-SecureString -AsPlainText -Force
             $entCreds = [System.Management.Automation.PSCredential]::new($secret.username, $secureString)
 
@@ -66,7 +70,9 @@ function Update-ServerPSA {
 
             if ( $status.disabled -eq $false ) {
                 # CHANGE PASSWORD
-                $newPW = Get-SECRandomPassword -ExcludePunctuation $true -PasswordLength 24 @cmdCreds
+                $pwParams = @{ ExcludePunctuation = $true; PasswordLength = 24 }
+                if ($PSCmdlet.ParameterSetName -eq '__crd') { $pwParams['Credential'] = $Credential; $pwParams['Region'] = $Region }
+                $newPW = Get-SECRandomPassword @pwParams
 
                 $restParams = @{
                     Uri     = $server['update'] -f $BaseUri
@@ -79,7 +85,9 @@ function Update-ServerPSA {
                 if ( $rotate.status -eq 'success' ) {
                     # UPDATE SECRET
                     $secret.password = $newPW
-                    Write-SECSecretValue -SecretId $SecretId -SecretString ($secret | ConvertTo-Json -Compress) @cmdCreds
+                    $updateParams = @{ SecretId = $SecretId; SecretString = ($secret | ConvertTo-Json -Compress) }
+                    if ($PSCmdlet.ParameterSetName -eq '__crd') { $updateParams['Credential'] = $Credential; $updateParams['Region'] = $Region }
+                    Write-SECSecretValue @updateParams
                 }
                 else {
                     Throw ('Error updating user password for app [{0}]' -f ($server['user'] -f $BaseUri))

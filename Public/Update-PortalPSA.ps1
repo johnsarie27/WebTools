@@ -32,16 +32,14 @@ function Update-PortalPSA {
         [ValidatePattern('^https://[\w\.\-]+(/[\w]+)?$')]
         [System.Uri] $BaseUri,
 
-        [Parameter(Mandatory, HelpMessage = 'AWS Credential object for AWS account')]
+        [Parameter(Mandatory, ParameterSetName = '__crd', HelpMessage = 'AWS Credential object for AWS account')]
         [Amazon.SecurityToken.Model.Credentials] $Credential,
 
-        [Parameter(Mandatory, HelpMessage = 'AWS Region')]
-        [ValidateScript( { $_ -in (Get-AWSRegion).Region })]
+        [Parameter(Mandatory, ParameterSetName = '__crds', HelpMessage = 'AWS Region')]
+        [ValidateScript({ $_ -in (Get-AWSRegion).Region })]
         [string] $Region
     )
     Begin {
-        $cmdCreds = @{ Credential = $Credential; Region = $Region }
-
         $portal = @{
             token  = '{0}/sharing/rest/generateToken'
             user   = '{0}/sharing/rest/community/users/{1}'
@@ -50,7 +48,13 @@ function Update-PortalPSA {
     }
     Process {
         try {
-            $secret = (Get-SECSecretValue -SecretId $SecretId @cmdCreds).SecretString | ConvertFrom-Json
+            if ($PSCmdlet.ParameterSetName -eq '__crd') {
+                $cmdCreds = @{ Credential = $Credential; Region = $Region }
+                $secret = (Get-SECSecretValue -SecretId $SecretId @cmdCreds).SecretString | ConvertFrom-Json
+            }
+            else {
+                $secret = (Get-SECSecretValue -SecretId $SecretId).SecretString | ConvertFrom-Json
+            }
             $secureString = $secret.password | ConvertTo-SecureString -AsPlainText -Force
             $entCreds = [System.Management.Automation.PSCredential]::new($secret.username, $secureString)
 
@@ -65,7 +69,9 @@ function Update-PortalPSA {
 
             if ( $status.role -eq 'org_admin' ) {
                 # CHANGE PASSWORD
-                $newPW = Get-SECRandomPassword -ExcludePunctuation $true -PasswordLength 24 @cmdCreds
+                $pwParams = @{ ExcludePunctuation = $true; PasswordLength = 24 }
+                if ($PSCmdlet.ParameterSetName -eq '__crd') { $pwParams['Credential'] = $Credential; $pwParams['Region'] = $Region }
+                $newPW = Get-SECRandomPassword @pwParams
 
                 $restParams = @{
                     Uri    = $portal['update'] -f $BaseUri, $secret.username
@@ -77,7 +83,9 @@ function Update-PortalPSA {
                 if ( $rotate.success -eq $true ) {
                     # UPDATE SECRET
                     $secret.password = $newPW
-                    Write-SECSecretValue -SecretId $SecretId -SecretString ($secret | ConvertTo-Json -Compress) @cmdCreds
+                    $updateParams = @{ SecretId = $SecretId; SecretString = ($secret | ConvertTo-Json -Compress) }
+                    if ($PSCmdlet.ParameterSetName -eq '__crd') { $updateParams['Credential'] = $Credential; $updateParams['Region'] = $Region }
+                    Write-SECSecretValue @updateParams
                 }
                 else {
                     Throw ('Error updating user password for app [{0}]' -f ($portal['user'] -f $BaseUri))
