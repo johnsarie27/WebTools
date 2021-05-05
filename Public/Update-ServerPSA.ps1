@@ -4,10 +4,12 @@ function Update-ServerPSA {
         Update ArcGIS Server PSA Account
     .DESCRIPTION
         Update ArcGIS Server PSA Account
-    .PARAMETER SecretId
-        ID of Secrets Manager secret
     .PARAMETER BaseUri
         ArcGIS Server base URI (a.k.a., context)
+    .PARAMETER Credential
+        PSCredential object containing current username and password
+    .PARAMETER NewPassowrd
+        PSCredential object containing new password
     .INPUTS
         None.
     .OUTPUTS
@@ -20,13 +22,15 @@ function Update-ServerPSA {
     ========================================================================= #>
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory, HelpMessage = 'ID of Secrets Manager secret')]
-        [ValidatePattern('\w{2,3}/app/\w{3,5}/[portalAdmin|serverAdmin]')]
-        [string] $SecretId,
-
         [Parameter(Mandatory, HelpMessage = 'Server base URI (a.k.a., context)')]
         [ValidatePattern('^https://[\w\.\-]+(/[\w]+)?$')]
-        [System.Uri] $BaseUri
+        [System.Uri] $BaseUri,
+
+        [Parameter(Mandatory, HelpMessage = 'PSCredential object containing current username and password')]
+        [System.Management.Automation.PSCredential] $Credential,
+
+        [Parameter(Mandatory, HelpMessage = 'PSCredential object containing new password')]
+        [System.Management.Automation.PSCredential] $NewPassword
     )
     Begin {
         $server = @{
@@ -36,12 +40,10 @@ function Update-ServerPSA {
         }
     }
     Process {
-        $secret = (Get-SECSecretValue -SecretId $SecretId).SecretString | ConvertFrom-Json
-        $secureString = $secret.password | ConvertTo-SecureString -AsPlainText -Force
-        $entCreds = [System.Management.Automation.PSCredential]::new($secret.username, $secureString)
+        # GET TOKEN
+        $token = Get-ServerToken -URL ($server['token'] -f $BaseUri) -Credential $Credential
 
-        $token = Get-ServerToken -URL ($server['token'] -f $BaseUri) -Credential $entCreds
-
+        # CHECK USER STATUS
         $restParams = @{
             Uri     = $server['user'] -f $BaseUri
             Method  = 'POST'
@@ -52,24 +54,21 @@ function Update-ServerPSA {
 
         if ( $status.disabled -eq $false ) {
             # CHANGE PASSWORD
-            $newPW = Get-SECRandomPassword -ExcludePunctuation $true -PasswordLength 24
-
             $restParams = @{
                 Uri     = $server['update'] -f $BaseUri
                 Method  = 'POST'
                 Headers = @{ Referer = 'referer-value' }
-                Body    = @{ f = 'pjson'; token = $token.token; username = $secret.username; password = $newPW }
+                Body    = @{
+                    f        = 'pjson'
+                    token    = $token.token
+                    username = $Credential.GetNetworkCredential().UserName
+                    password = $NewPassword.GetNetworkCredential().Password
+                }
             }
             $rotate = Invoke-RestMethod @restParams
 
-            if ( $rotate.status -eq 'success' ) {
-                # UPDATE SECRET
-                $secret.password = $newPW
-                Write-SECSecretValue -SecretId $SecretId -SecretString ($secret | ConvertTo-Json -Compress)
-            }
-            else {
-                Throw ('Error updating user password for app [{0}]' -f ($server['user'] -f $BaseUri))
-            }
+            if ( $rotate.status -eq 'success' ) { [pscustomobject] @{ Success = $true } }
+            else { Throw ('Error updating user password for app [{0}]' -f ($server['user'] -f $BaseUri)) }
         }
         else {
             Throw ('Error retrieving user for app [{0}]' -f ($server['user'] -f $BaseUri))

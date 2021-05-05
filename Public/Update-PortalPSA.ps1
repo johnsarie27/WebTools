@@ -4,10 +4,12 @@ function Update-PortalPSA {
         Update Portal for ArcGIS PSA Account
     .DESCRIPTION
         Update Portal for ArcGIS PSA Account
-    .PARAMETER SecretId
-        ID of Secrets Manager secret
     .PARAMETER BaseUri
         Portal base URI (a.k.a., context)
+    .PARAMETER Credential
+        PSCredential object containing current username and password
+    .PARAMETER NewPassowrd
+        PSCredential object containing new password
     .INPUTS
         None.
     .OUTPUTS
@@ -20,13 +22,15 @@ function Update-PortalPSA {
     ========================================================================= #>
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory, HelpMessage = 'ID of Secrets Manager secret')]
-        [ValidatePattern('\w{2,3}/app/\w{3,5}/[portalAdmin|serverAdmin]')]
-        [string] $SecretId,
-
         [Parameter(Mandatory, HelpMessage = 'Portal base URI (a.k.a., context)')]
         [ValidatePattern('^https://[\w\.\-]+(/[\w]+)?$')]
-        [System.Uri] $BaseUri
+        [System.Uri] $BaseUri,
+
+        [Parameter(Mandatory, HelpMessage = 'PSCredential object containing current username and password')]
+        [System.Management.Automation.PSCredential] $Credential,
+
+        [Parameter(Mandatory, HelpMessage = 'PSCredential object containing new password')]
+        [System.Management.Automation.PSCredential] $NewPassword
     )
     Begin {
         $portal = @{
@@ -36,14 +40,11 @@ function Update-PortalPSA {
         }
     }
     Process {
-        $secret = (Get-SECSecretValue -SecretId $SecretId).SecretString | ConvertFrom-Json
-        $secureString = $secret.password | ConvertTo-SecureString -AsPlainText -Force
-        $entCreds = [System.Management.Automation.PSCredential]::new($secret.username, $secureString)
-
-        $token = Get-PortalToken -URL ($portal['token'] -f $BaseUri) -Credential $entCreds
+        # GET TOKEN
+        $token = Get-PortalToken -URL ($portal['token'] -f $BaseUri) -Credential $Credential
 
         $restParams = @{
-            Uri    = $portal['user'] -f $BaseUri, $secret.username
+            Uri    = $portal['user'] -f $BaseUri, $Credential.GetNetworkCredential().UserName
             Method = 'POST'
             Body   = @{ f = 'pjson'; token = $token.token }
         }
@@ -51,23 +52,19 @@ function Update-PortalPSA {
 
         if ( $status.role -eq 'org_admin' ) {
             # CHANGE PASSWORD
-            $newPW = Get-SECRandomPassword -ExcludePunctuation $true -PasswordLength 24
-
             $restParams = @{
-                Uri    = $portal['update'] -f $BaseUri, $secret.username
+                Uri    = $portal['update'] -f $BaseUri, $Credential.GetNetworkCredential().UserName
                 Method = 'POST'
-                Body   = @{ f = 'pjson'; token = $token.token; password = $newPW }
+                Body   = @{
+                    f        = 'pjson'
+                    token    = $token.token
+                    password = $NewPassword.GetNetworkCredential().Password
+                }
             }
             $rotate = Invoke-RestMethod @restParams
 
-            if ( $rotate.success -eq $true ) {
-                # UPDATE SECRET
-                $secret.password = $newPW
-                Write-SECSecretValue -SecretId $SecretId -SecretString ($secret | ConvertTo-Json -Compress)
-            }
-            else {
-                Throw ('Error updating user password for app [{0}]' -f ($portal['user'] -f $BaseUri))
-            }
+            if ( $rotate.success -eq $true ) { [pscustomobject] @{ Success = $true } }
+            else { Throw ('Error updating user password for app [{0}]' -f ($portal['user'] -f $BaseUri)) }
         }
         else {
             Throw ('Error retrieving user for app [{0}]' -f ($portal['user'] -f $BaseUri))
