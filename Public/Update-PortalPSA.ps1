@@ -8,10 +8,6 @@ function Update-PortalPSA {
         ID of Secrets Manager secret
     .PARAMETER BaseUri
         Portal base URI (a.k.a., context)
-    .PARAMETER Credential
-        AWS Credential object for AWS account
-    .PARAMETER Region
-        AWS Region
     .INPUTS
         None.
     .OUTPUTS
@@ -30,14 +26,7 @@ function Update-PortalPSA {
 
         [Parameter(Mandatory, HelpMessage = 'Portal base URI (a.k.a., context)')]
         [ValidatePattern('^https://[\w\.\-]+(/[\w]+)?$')]
-        [System.Uri] $BaseUri,
-
-        [Parameter(Mandatory, ParameterSetName = '__crd', HelpMessage = 'AWS Credential object for AWS account')]
-        [Amazon.SecurityToken.Model.Credentials] $Credential,
-
-        [Parameter(Mandatory, ParameterSetName = '__crds', HelpMessage = 'AWS Region')]
-        [ValidateScript({ $_ -in (Get-AWSRegion).Region })]
-        [string] $Region
+        [System.Uri] $BaseUri
     )
     Begin {
         $portal = @{
@@ -47,57 +36,41 @@ function Update-PortalPSA {
         }
     }
     Process {
-        try {
-            if ($PSCmdlet.ParameterSetName -eq '__crd') {
-                $cmdCreds = @{ Credential = $Credential; Region = $Region }
-                $secret = (Get-SECSecretValue -SecretId $SecretId @cmdCreds).SecretString | ConvertFrom-Json
-            }
-            else {
-                $secret = (Get-SECSecretValue -SecretId $SecretId).SecretString | ConvertFrom-Json
-            }
-            $secureString = $secret.password | ConvertTo-SecureString -AsPlainText -Force
-            $entCreds = [System.Management.Automation.PSCredential]::new($secret.username, $secureString)
+        $secret = (Get-SECSecretValue -SecretId $SecretId).SecretString | ConvertFrom-Json
+        $secureString = $secret.password | ConvertTo-SecureString -AsPlainText -Force
+        $entCreds = [System.Management.Automation.PSCredential]::new($secret.username, $secureString)
 
-            $token = Get-PortalToken -URL ($portal['token'] -f $BaseUri) -Credential $entCreds
+        $token = Get-PortalToken -URL ($portal['token'] -f $BaseUri) -Credential $entCreds
+
+        $restParams = @{
+            Uri    = $portal['user'] -f $BaseUri, $secret.username
+            Method = 'POST'
+            Body   = @{ f = 'pjson'; token = $token.token }
+        }
+        $status = Invoke-RestMethod @restParams
+
+        if ( $status.role -eq 'org_admin' ) {
+            # CHANGE PASSWORD
+            $newPW = Get-SECRandomPassword -ExcludePunctuation $true -PasswordLength 24
 
             $restParams = @{
-                Uri    = $portal['user'] -f $BaseUri, $secret.username
+                Uri    = $portal['update'] -f $BaseUri, $secret.username
                 Method = 'POST'
-                Body   = @{ f = 'pjson'; token = $token.token }
+                Body   = @{ f = 'pjson'; token = $token.token; password = $newPW }
             }
-            $status = Invoke-RestMethod @restParams
+            $rotate = Invoke-RestMethod @restParams
 
-            if ( $status.role -eq 'org_admin' ) {
-                # CHANGE PASSWORD
-                $pwParams = @{ ExcludePunctuation = $true; PasswordLength = 24 }
-                if ($PSCmdlet.ParameterSetName -eq '__crd') { $pwParams['Credential'] = $Credential; $pwParams['Region'] = $Region }
-                $newPW = Get-SECRandomPassword @pwParams
-
-                $restParams = @{
-                    Uri    = $portal['update'] -f $BaseUri, $secret.username
-                    Method = 'POST'
-                    Body   = @{ f = 'pjson'; token = $token.token; password = $newPW }
-                }
-                $rotate = Invoke-RestMethod @restParams
-
-                if ( $rotate.success -eq $true ) {
-                    # UPDATE SECRET
-                    $secret.password = $newPW
-                    $updateParams = @{ SecretId = $SecretId; SecretString = ($secret | ConvertTo-Json -Compress) }
-                    if ($PSCmdlet.ParameterSetName -eq '__crd') { $updateParams['Credential'] = $Credential; $updateParams['Region'] = $Region }
-                    Write-SECSecretValue @updateParams
-                }
-                else {
-                    Throw ('Error updating user password for app [{0}]' -f ($portal['user'] -f $BaseUri))
-                }
+            if ( $rotate.success -eq $true ) {
+                # UPDATE SECRET
+                $secret.password = $newPW
+                Write-SECSecretValue -SecretId $SecretId -SecretString ($secret | ConvertTo-Json -Compress)
             }
             else {
-                Throw ('Error retrieving user for app [{0}]' -f ($portal['user'] -f $BaseUri))
+                Throw ('Error updating user password for app [{0}]' -f ($portal['user'] -f $BaseUri))
             }
         }
-        catch {
-            Throw $_.Exception.Message
-            # THIS NEEDS TO WRITE TO A LOG
+        else {
+            Throw ('Error retrieving user for app [{0}]' -f ($portal['user'] -f $BaseUri))
         }
     }
 }
