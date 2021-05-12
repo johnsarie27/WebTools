@@ -63,8 +63,14 @@ function Update-PortalPSA {
             }
             $rotate = Invoke-RestMethod @restParams
 
-            if ( $rotate.success -eq $true ) { [pscustomobject] @{ Success = $true } }
-            else { Throw ('Error updating user password for app [{0}]' -f ($portal['user'] -f $BaseUri)) }
+            if ( $rotate.success -eq $true ) {
+                [pscustomobject] @{ Success = $true }
+            }
+            else {
+                $details = $rotate.error.details | Out-String
+                $errArray = @($rotate.error.code, $rotate.error.messageCode, $rotate.error.message, $details)
+                Throw ('{0} -- {1} -- {2} -- {3}' -f $errArray)
+            }
         }
         else {
             Throw ('Error retrieving user for app [{0}]' -f ($portal['user'] -f $BaseUri))
