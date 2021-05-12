@@ -69,7 +69,7 @@ function Get-ServerToken {
                 $msg = "Request failed with response:`n`tcode: {0}`n`tmessage: {1}`n`tdetails: {2}" -f $tokens
             }
             elseif ( $response.ReasonPhrase ) { $msg = $response.ReasonPhrase }
-            else { $msg = "Request failed with unknown error" }
+            else { $msg = "Request failed with unknown error. Username and/or password may be incorrect." }
 
             Throw $msg
         }
