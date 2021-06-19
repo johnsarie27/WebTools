@@ -41,7 +41,8 @@ function Test-PortalToken {
         $self = Invoke-RestMethod @restParams
 
         if ( $self.error ) {
-            Write-Error -Message 'Token invalid'
+            Write-Warning -Message 'Invalid token'
+            $self
         }
         elseif ( $self.user.username -eq $secret.username ) {
             Write-Output -InputObject ('Token has been validated for user: {0}' -f $self.user.username)
