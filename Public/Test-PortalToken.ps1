@@ -1,9 +1,9 @@
 function Test-PortalToken {
     <# =========================================================================
     .SYNOPSIS
-        Short description
+        Test Portal token for validity
     .DESCRIPTION
-        Long description
+        Test Portal token for validity
     .PARAMETER Context
         Target Portal context
     .PARAMETER Token
@@ -11,10 +11,10 @@ function Test-PortalToken {
     .INPUTS
         None.
     .OUTPUTS
-        System.String.
+        System.Object.
     .EXAMPLE
-        PS C:\> <example usage>
-        Explanation of what the example does
+        PS C:\> Test-PortalToken -Context 'https://arcgis.com/arcgis' -Token $token
+        Tests to see if the token $token is valid
     .NOTES
         General notes
     ========================================================================= #>
@@ -40,7 +40,10 @@ function Test-PortalToken {
         }
         $self = Invoke-RestMethod @restParams
 
-        if ( $self.user.username -eq $secret.username ) {
+        if ( $self.error ) {
+            Write-Error -Message 'Token invalid'
+        }
+        elseif ( $self.user.username -eq $secret.username ) {
             Write-Output -InputObject ('Token has been validated for user: {0}' -f $self.user.username)
         }
         elseif ( $self.appInfo ) {
