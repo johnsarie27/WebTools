@@ -1,9 +1,9 @@
-function Test-PortalToken {
+function Get-SecurityPolicy {
     <# =========================================================================
     .SYNOPSIS
-        Test Portal token for validity
+        Get security policy
     .DESCRIPTION
-        Test Portal token for validity
+        Get Portal user security policy
     .PARAMETER Context
         Target Portal context
     .PARAMETER Token
@@ -13,8 +13,8 @@ function Test-PortalToken {
     .OUTPUTS
         System.Object.
     .EXAMPLE
-        PS C:\> Test-PortalToken -Context 'https://arcgis.com/arcgis' -Token $token
-        Tests Portal token $token for validity
+        PS C:\> Get-SecurityPolicy -Context 'https://arcgis.com/arcgis' -Token $token
+        Get security policy for Portal user
     .NOTES
         General notes
     ========================================================================= #>
@@ -25,13 +25,17 @@ function Test-PortalToken {
         [ValidateScript({ $_.AbsoluteUri -match '^https://[\w\/\.-]+[^/]$' })]
         [System.Uri] $Context,
 
+        [Parameter(HelpMessage = 'Portal application ID')]
+        [ValidateNotNullOrEmpty()]
+        [String] $Id = '',
+
         [Parameter(Mandatory, HelpMessage = 'Portal token')]
         [ValidatePattern('[\w=-]+')]
         [String] $Token
     )
     Process {
         $restParams = @{
-            Uri    = '{0}/sharing/rest/portals/self' -f $Context
+            Uri    = '{0}/sharing/rest/portals/{1}/securityPolicy' -f $Context, $Id
             Method = 'POST'
             Body   = @{
                 f     = 'pjson'
