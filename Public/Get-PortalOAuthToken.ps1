@@ -41,8 +41,8 @@ function Get-PortalOAuthToken {
             Method = 'POST'
             Body   = @{
                 f             = 'pjson'
-                client_id     = $Credential.UserName #$secret.client_id
-                client_secret = $Credential.GetNetworkCredential().Password #$secret.client_secret
+                client_id     = $Credential.UserName
+                client_secret = $Credential.GetNetworkCredential().Password
                 grant_type    = #$secret.grant_type
                 expiration    = $Expiration
             }
