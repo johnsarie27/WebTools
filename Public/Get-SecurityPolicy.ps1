@@ -25,13 +25,13 @@ function Get-SecurityPolicy {
         [ValidateScript({ $_.AbsoluteUri -match '^https://[\w\/\.-]+[^/]$' })]
         [System.Uri] $Context,
 
-        [Parameter(HelpMessage = 'Portal application ID')]
-        [ValidateNotNullOrEmpty()]
-        [String] $Id = '',
-
         [Parameter(Mandatory, HelpMessage = 'Portal token')]
         [ValidatePattern('[\w=-]+')]
-        [String] $Token
+        [String] $Token,
+
+        [Parameter(HelpMessage = 'Portal application ID')]
+        [ValidateNotNullOrEmpty()]
+        [String] $Id = '0123456789ABCDEF'
     )
     Process {
         $restParams = @{

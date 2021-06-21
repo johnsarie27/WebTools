@@ -43,7 +43,7 @@ function Get-PortalOAuthToken {
                 f             = 'pjson'
                 client_id     = $Credential.UserName
                 client_secret = $Credential.GetNetworkCredential().Password
-                grant_type    = #$secret.grant_type
+                grant_type    = 'client_credentials'
                 expiration    = $Expiration
             }
         }
