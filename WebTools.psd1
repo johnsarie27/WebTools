@@ -9,7 +9,7 @@
     RootModule = 'WebTools.psm1'
 
     # Version number of this module.
-    ModuleVersion     = '0.1.5'
+    ModuleVersion     = '0.1.6'
 
     # Supported PSEditions
     # CompatiblePSEditions = @()
@@ -52,6 +52,7 @@
         'AWS.Tools.Common'
         'AWS.Tools.SecretsManager'
         'AWS.Tools.SimpleSystemsManagement'
+        'ArcGISEnterprise'
     )
 
     # Assemblies that must be loaded prior to importing this module
