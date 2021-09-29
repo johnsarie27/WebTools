@@ -50,7 +50,7 @@
     # Modules that must be imported into the global environment prior to importing this module
     RequiredModules   = @(
         'AWS.Tools.Common'
-        'AWS.Tools.SecretsManager'
+        #'AWS.Tools.SecretsManager'
         'AWS.Tools.SimpleSystemsManagement'
         'ArcGISEnterprise'
     )
