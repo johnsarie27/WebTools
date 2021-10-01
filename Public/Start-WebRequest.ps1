@@ -8,6 +8,8 @@ function Start-WebRequest {
         outside of this specific function.
     .PARAMETER Payload
         Json payload containing required information for web request
+    .PARAMETER Credential
+        Credentials for URI
     .PARAMETER Body
         Body of web request if not specified in the Payload
     .INPUTS
@@ -15,8 +17,8 @@ function Start-WebRequest {
     .OUTPUTS
         Microsoft.PowerShell.Commands.BasicHtmlWebResponseObject.
     .EXAMPLE
-        PS C:\> <example usage>
-        Explanation of what the example does
+        PS C:\> Start-WebRequest -Payload $p
+        Uses the parameters in the payload parameter to call 'Invoke-WebRequest'
     .NOTES
         General notes
         This function requires the system running it has credentials to pull and
@@ -28,6 +30,9 @@ function Start-WebRequest {
         [ValidateScript({ Test-Json -Json $_ -Schema $EtlSchema })]
         [string] $Payload,
 
+        [Parameter(HelpMessage = 'Credentials for URI')]
+        [System.Management.Automation.PSCredential] $Credential,
+
         [Parameter(HelpMessage = 'Body')]
         [System.Object] $Body
     )
@@ -38,26 +43,23 @@ function Start-WebRequest {
         $params = @{ Uri = $data.URL }
 
         if ( $data.Auth.Password ) { # MAKE SURE TO REMOVE @CREDS !!!
-            $securePW = (Get-SSMParameter -Name $data.Auth.Password -WithDecryption $true).Value | ConvertTo-SecureString -AsPlainText -Force
-            if ( !$data.Auth.Username ) { $data.Auth.Username = 'none' }
-            $creds = [System.Management.Automation.PSCredential]::new($data.Auth.Username, $securePw)
 
             # DETERMINE AUTHENTICATION
             switch ($data.Auth.Type) {
                 'Token' {
-                    $token = Get-PortalToken -Credential $creds -URL $data.Dependency
+                    $token = Get-PortalToken -Credential $Credential -URL $data.Dependency
                     $params['Uri'] = $data.URL -f $token.token
                 }
                 'ApiKey' {
-                    $params['Uri'] = $data.URL -f $creds.GetNetworkCredential().Password
+                    $params['Uri'] = $data.URL -f $Credential.GetNetworkCredential().Password
                 }
                 'Basic' {
                     $params.Add('Authentication', 'Basic')
-                    $params.Add('Credential', $creds)
+                    $params.Add('Credential', $Credential)
                 }
                 default {
                     # THIS WORKS FOR DIGEST AUTH
-                    $params.Add('Credential', $creds)
+                    $params.Add('Credential', $Credential)
                 }
             }
         }
@@ -97,7 +99,7 @@ function Start-WebRequest {
         # IF DIGEST AUTHENTICATION IS USED AND THE URL SCHEME IS NOT HTTPS AN ERROR MESSAGE WILL BE
         # GENERATED PRODUCING A 401 UNAUTHORIZED. BE SURE TO USE HTTPS WHEN PASSING AUTHENTICATION
         if ( ([System.Uri] $params['Uri']).Scheme -ne 'https' ) {
-            Write-Host -Object 'URL is not using Secure Protocol (HTTPS)'
+            Write-Host -Object 'URL is NOT using Secure Protocol (HTTPS)'
         }
 
         Invoke-WebRequest @params
