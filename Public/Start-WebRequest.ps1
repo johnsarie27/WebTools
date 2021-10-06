@@ -42,7 +42,7 @@ function Start-WebRequest {
 
         $params = @{ Uri = $data.URL }
 
-        if ( $data.Auth.Password ) { # MAKE SURE TO REMOVE @CREDS !!!
+        if ( $PSBoundParameters.ContainsKey('Credential') ) {
 
             # DETERMINE AUTHENTICATION
             switch ($data.Auth.Type) {
