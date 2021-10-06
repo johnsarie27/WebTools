@@ -31,6 +31,7 @@ function Start-WebRequest {
         [string] $Payload,
 
         [Parameter(HelpMessage = 'Credentials for URI')]
+        [ValidateNotNullOrEmpty()]
         [System.Management.Automation.PSCredential] $Credential,
 
         [Parameter(HelpMessage = 'Body')]
