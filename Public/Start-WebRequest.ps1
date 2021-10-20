@@ -74,7 +74,7 @@ function Start-WebRequest {
         }
         if ( $data.Body ) {
             if ( $data.Body -eq 'Source content' ) {
-                if ( $headers -and $headers['Content-Type'] -eq 'application/json' ) {
+                if ( $headers -and $headers['Encapsulate'] -eq 'JSON' ) {
                     # SKIP JSON VALIDITY CHECKS AND ALWAYS WRAP INTO JSON OBJECT FOR CONSISTENCY
                     $params.Add('Body', ('{"data":' + $Body + '}'))
                     <# Write-Host -Object 'Attempting to validate Json'
