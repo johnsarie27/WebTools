@@ -63,20 +63,30 @@ function Start-WebRequest {
                     $params.Add('Credential', $Credential)
                 }
             }
+
+            Write-Verbose -Message 'Credential object added'
         }
         if ( $data.Method ) {
             $params.Add('Method', $data.Method)
+
+            Write-Verbose -Message ('Method set to {0}' -f $params.Method)
         }
         if ( $data.Headers ) {
             $headers = @{ }
             $data.Headers | Foreach-Object -Process { $headers.Add($_.Key, $_.Value) }
             $params.Add('Headers', $headers)
+
+            Write-Verbose -Message 'Headers added: '
+            Write-Verbose -Message ($params['Headers'] | ConvertTo-Json -Compress)
         }
         if ( $data.Body ) {
+            # ADD PULLED CONTENT AS BODY
             if ( $data.Body -eq 'Source content' ) {
                 if ( $headers -and $headers['Encapsulate'] -eq 'JSON' ) {
                     # SKIP JSON VALIDITY CHECKS AND ALWAYS WRAP INTO JSON OBJECT FOR CONSISTENCY
                     $params.Add('Body', ('{"data":' + $Body + '}'))
+
+                    Write-Verbose -Message 'Body JSON encapsulated'
                     <# Write-Host -Object 'Attempting to validate Json'
                     try {
                         if ( Test-Json -Json $Body -ErrorAction SilentlyContinue ) { $params.Add('Body', $Body) }
@@ -89,11 +99,15 @@ function Start-WebRequest {
                     $params.Add('Body', $Body)
                 }
             }
+            # ADD BODY VALUE FROM PAYLOAD AS STRING
             elseif ( $data.Body.GetType().FullName -eq 'System.String' ) {
                 $params.Add('Body', $data.Body)
+                Write-Verbose -Message 'Body added as string'
             }
+            # ADD BODY VALUES FROM PAYLOAD AS JSON
             else {
                 $params.Add('Body', (ConvertTo-Json -InputObject $data.Body -Compress))
+                Write-Verbose -Message 'Body added as JSON'
             }
         }
 
