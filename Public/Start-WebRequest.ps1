@@ -27,7 +27,7 @@ function Start-WebRequest {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, ValueFromPipeline, HelpMessage = 'Json payload for pull-push process')]
-        [ValidateScript({ Test-Json -Json $_ -Schema $EtlSchema })]
+        [ValidateScript({ Test-Json -Json $_ -Schema $ETL_Schema })]
         [string] $Payload,
 
         [Parameter(HelpMessage = 'Credentials for URI')]
@@ -48,7 +48,7 @@ function Start-WebRequest {
             # DETERMINE AUTHENTICATION
             switch ($data.Auth.Type) {
                 'Token' {
-                    $token = Get-PortalToken -Credential $Credential -URL $data.Dependency
+                    $token = Get-PortalToken -Credential $Credential -Context $data.Dependency
                     $params['Uri'] = $data.URL -f $token.token
                 }
                 'ApiKey' {
