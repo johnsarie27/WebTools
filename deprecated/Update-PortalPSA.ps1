@@ -58,7 +58,7 @@ function Update-PortalPSA {
             $secureString = $secret.password | ConvertTo-SecureString -AsPlainText -Force
             $entCreds = [System.Management.Automation.PSCredential]::new($secret.username, $secureString)
 
-            $token = Get-PortalToken -URL ($portal['token'] -f $BaseUri) -Credential $entCreds
+            $token = Get-PortalToken -Context ($portal['token'] -f $BaseUri) -Credential $entCreds
 
             $restParams = @{
                 Uri    = $portal['user'] -f $BaseUri, $secret.username
