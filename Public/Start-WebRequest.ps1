@@ -47,6 +47,10 @@ function Start-WebRequest {
 
             # DETERMINE AUTHENTICATION
             switch ($data.Auth.Type) {
+                'ServerToken' {
+                    $token = Get-ServerToken -Credential $Credential -Context $data.Dependency
+                    $params['Uri'] = $data.URL -f $token.token
+                }
                 'Token' {
                     $token = Get-PortalToken -Credential $Credential -Context $data.Dependency
                     $params['Uri'] = $data.URL -f $token.token
