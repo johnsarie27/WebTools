@@ -28,7 +28,7 @@ function Start-WebRequest {
     Param(
         [Parameter(Mandatory, ValueFromPipeline, HelpMessage = 'Json payload for pull-push process')]
         [ValidateScript({ Test-Json -Json $_ -Schema $ETL_Schema })]
-        [string] $Payload,
+        [System.String] $Payload,
 
         [Parameter(HelpMessage = 'Credentials for URI')]
         [ValidateNotNullOrEmpty()]
@@ -48,10 +48,12 @@ function Start-WebRequest {
             # DETERMINE AUTHENTICATION
             switch ($data.Auth.Type) {
                 'ServerToken' {
+                    # THE DEPENDENCY VALUE IN THE JSON PAYLOAD MUST BE SET TO THE ARCGIS SERVER CONTEXT
                     $token = Get-ServerToken -Credential $Credential -Context $data.Dependency
                     $params['Uri'] = $data.URL -f $token.token
                 }
                 'Token' {
+                    # THE DEPENDENCY VALUE IN THE JSON PAYLOAD MUST BE SET TO THE PORTAL FOR ARCGIS CONTEXT
                     $token = Get-PortalToken -Credential $Credential -Context $data.Dependency
                     $params['Uri'] = $data.URL -f $token.token
                 }
