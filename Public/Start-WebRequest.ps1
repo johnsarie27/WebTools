@@ -37,7 +37,6 @@ function Start-WebRequest {
         [Parameter(HelpMessage = 'Body')]
         [System.Object] $Body
     )
-
     Process {
         $data = $Payload | ConvertFrom-Json
 
