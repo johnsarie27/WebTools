@@ -6,7 +6,7 @@
 
 @{
     # Script module or binary module file associated with this manifest.
-    RootModule = 'WebTools.psm1'
+    RootModule        = 'WebTools.psm1'
 
     # Version number of this module.
     ModuleVersion     = '0.1.10'
@@ -49,7 +49,7 @@
 
     # Modules that must be imported into the global environment prior to importing this module
     RequiredModules   = @(
-        'ArcGISEnterprise'
+        #'ArcGISEnterprise'
     )
 
     # Assemblies that must be loaded prior to importing this module
