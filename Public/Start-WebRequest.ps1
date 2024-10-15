@@ -1,5 +1,5 @@
 function Start-WebRequest {
-    <# =========================================================================
+    <#
     .SYNOPSIS
         Initiate web request using provided parameters
     .DESCRIPTION
@@ -23,7 +23,7 @@ function Start-WebRequest {
         General notes
         This function requires the system running it has credentials to pull and
         decrypt SSM Parameters from Parameter Store.
-    ========================================================================= #>
+    #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory, ValueFromPipeline, HelpMessage = 'Json payload for pull-push process')]
@@ -119,7 +119,7 @@ function Start-WebRequest {
         # IF DIGEST AUTHENTICATION IS USED AND THE URL SCHEME IS NOT HTTPS AN ERROR MESSAGE WILL BE
         # GENERATED PRODUCING A 401 UNAUTHORIZED. BE SURE TO USE HTTPS WHEN PASSING AUTHENTICATION
         if ( ([System.Uri] $params['Uri']).Scheme -ne 'https' ) {
-            Write-Host -Object 'URL is NOT using Secure Protocol (HTTPS)'
+            Write-Warning -Message 'URL is NOT using Secure Protocol (HTTPS)'
         }
 
         Invoke-WebRequest @params
